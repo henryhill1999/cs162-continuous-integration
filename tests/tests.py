@@ -37,7 +37,7 @@ class BasicTests(unittest.TestCase):
     def test_add_invalid(self):
         response = self.app.post(
           '/add',
-          data = {“expression”:”1+”},
+          data = {'expression':'1+'},
           follow_redirects=True
         )
         self.assertEqual(response.status_code, 401)
