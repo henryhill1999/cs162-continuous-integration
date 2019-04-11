@@ -8,7 +8,7 @@ class DockerComposeTestCase(unittest.TestCase):
 
     def test_endpoint(self):
         r = requests.post('http://localhost:5000/add', data={'expression':'100+100'})
-        self.assertNotEqual(r.text.find('200=100+100'), -1)
+        self.assertNotEqual(r.text.find('100+100'), -1)
 
     def test_error_endpoint(self):
         r = requests.post('http://localhost:5000/add', data={'expression':'100+'})
