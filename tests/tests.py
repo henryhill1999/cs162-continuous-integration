@@ -2,6 +2,7 @@ import os
 import unittest
 
 from project import app, db, ma
+from sqlalchemy import create_engine
 
 
 TEST_DB = 'test.db'
@@ -29,7 +30,7 @@ class BasicTests(unittest.TestCase):
     def test_add_valid(self):
         response = self.app.post(
           '/add',
-          data = {“expression”:”1+1”},
+          data = {'expression':'1+1'},
           follow_redirects=True
         )
         self.assertEqual(response.status_code, 200)
@@ -45,7 +46,6 @@ class BasicTests(unittest.TestCase):
     #checking connection to db
     def test_connection_db(self):
         engine = create_engine('postgresql://cs162_user:cs162_password@localhost:5432/cs162', echo = True)
-        import create_engine from sqlalchemy
         result = engine.connect()
         self.assertEqual(result.execute("SELECT value FROM Expression WHERE text='1+1'"), 2)
 
