@@ -1,54 +1,56 @@
-import os
-import unittest
 
-from project import app, db, ma
+import os
+import requests
+import unittest
 from sqlalchemy import create_engine
 
+class DockerComposeTestCase(unittest.TestCase):
 
-TEST_DB = 'test.db'
+    def test_endpoint(self):
+        r = requests.post('http://localhost:5000/add', data={'expression':'100+100'})
+        self.assertNotEqual(r.text.find('200=100+100'), -1)
 
+    def test_error_endpoint(self):
+        r = requests.post('http://localhost:5000/add', data={'expression':'100+'})
+        self.assertNotEqual(r.status_code, 200)
 
-class BasicTests(unittest.TestCase):
-
-    def setUp(self):
-        app.config['TESTING'] = True
-        app.config['WTF_CSRF_ENABLED'] = False
-        app.config['DEBUG'] = False
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://cs162_user:cs162_password@localhost/cs162?port=5430'
-        self.app = app.test_client()
-        db.drop_all()
-        db.create_all()
-
-    def tearDown(self):
-        pass
-
-    #http request
-    def test_main_page(self):
-        response = self.app.post('/', follow_redirects=True)
-        self.assertEqual(response.status_code, 200)
-    #post request
-    def test_add_valid(self):
-        response = self.app.post(
-          '/add',
-          data = {'expression':'1+1'},
-          follow_redirects=True
-        )
-        self.assertEqual(response.status_code, 200)
-
-    def test_add_invalid(self):
-        response = self.app.post(
-          '/add',
-          data = {'expression':'1+'},
-          follow_redirects=True
-        )
-        self.assertEqual(response.status_code, 401)
-
-    #checking connection to db
-    def test_connection_db(self):
+    def test_db(self):
+        r = requests.post('http://localhost:5000/add', data={'expression':'100+100'})
         engine = create_engine('postgresql://cs162_user:cs162_password@localhost:5432/cs162', echo = True)
-        result = engine.connect()
-        self.assertEqual(result.execute("SELECT value FROM Expression WHERE text='1+1'"), 2)
 
+        with engine.connect() as con:
+            rs = con.execute("SELECT * FROM Expression WHERE text = '100+100'")
+            rows = rs.fetchall()
 
-if __name__ == "__main__":
+        self.assertNotEqual(len(rows), 0)
+
+    def test_error_db(self):
+        r = requests.post('http://localhost:5000/add', data={'expression':'100+'})
+        engine = create_engine('postgresql://cs162_user:cs162_password@localhost:5432/cs162', echo = True)
+
+        with engine.connect() as con:
+            rs = con.execute("SELECT * FROM Expression WHERE text = '100+'")
+            rows = rs.fetchall()
+
+        self.assertEqual(len(rows), 0)
+
+    def test_rows(self):
+        r = requests.post('http://localhost:5000/add', data={'expression':'100+100'})
+        engine = create_engine('postgresql://cs162_user:cs162_password@localhost:5432/cs162', echo = True)
+
+        with engine.connect() as con:
+
+            rs = con.execute('SELECT * FROM Expression')
+            rows = rs.fetchall()
+
+        r2 = requests.post('http://localhost:5000/add', data={'expression':'100+'})
+
+        with engine.connect() as con:
+
+            rs2 = con.execute('SELECT * FROM Expression')
+            rows2 = rs2.fetchall()
+
+        self.assertEqual(len(rows), len(rows2))
+
+if __name__ == '__main__':
     unittest.main()
